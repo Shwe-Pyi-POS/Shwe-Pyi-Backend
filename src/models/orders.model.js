@@ -281,6 +281,7 @@ orderSchema.index({ creditPersonId: 1, paymentType: 1, isDeleted: 1, orderStatus
 // Performance indexes for orderNumber queries (used in generateOrderNumber)
 orderSchema.index({ orderNumber: 1, isDeleted: 1 }); // For finding latest order by date prefix
 orderSchema.index({ orderNumber: 1, createdAt: -1 }); // For sorting by orderNumber and date
+orderSchema.index({ dueDate: 1, isDeleted: 1 }); // For filtering upcoming due orders
 
 const Order = mongoose.model("Order", orderSchema);
 

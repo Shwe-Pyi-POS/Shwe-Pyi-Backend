@@ -181,6 +181,9 @@ export const createOrder = asyncErrorHandler(async (req, res, next) => {
     if (isNaN(parsed.getTime())) {
       return next(new CustomError(400, "Invalid due date format"));
     }
+    if (parsed < new Date(orderDate || Date.now())) {
+      return next(new CustomError(400, "Due date cannot be before order date"));
+    }
   }
 
   // Start MongoDB session for transaction
@@ -974,6 +977,14 @@ export const updateOrderDueDate = asyncErrorHandler(async (req, res, next) => {
       const order = await Order.findById(orderId).session(session);
       if (!order) throw new CustomError(404, "Order not found");
       if (order.isDeleted) throw new CustomError(400, "Cannot update deleted order");
+
+      if (dueDate) {
+        const parsed = new Date(dueDate);
+        const orderDateObj = new Date(order.orderDate || order.createdAt);
+        if (parsed < orderDateObj) {
+          throw new CustomError(400, "Due date cannot be before order date");
+        }
+      }
 
       order.dueDate = dueDate ? new Date(dueDate) : null;
       await order.save({ session });
