@@ -1,0 +1,12 @@
+node_modules/
+logs/
+testings/
+legacy/
+documentations/
+ecosystem.config.cjs
+archit-proposed.txt
+.env
+multi-scenario-concurrent-testing.js
+postman-examples-*.json
+deployment-guide.txt
+*.txt

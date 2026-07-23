@@ -1,0 +1,43 @@
+{
+  "name": "i-max-pos",
+  "version": "1.0.0",
+  "description": "i-max-pos warehouse supplier pos",
+  "keywords": [
+    "pos",
+    "warehouse",
+    "supplier"
+  ],
+  "license": "ISC",
+  "author": "B@C",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "dev": "export NODE_ENV=development && nodemon src/server.js",
+    "prod": "export NODE_ENV=production && nodemon src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.940.0",
+    "@aws-sdk/lib-storage": "^3.940.0",
+    "ai": "^6.0.190",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "google-libphonenumber": "^3.2.43",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment-timezone": "^0.6.0",
+    "mongoose": "^9.0.0",
+    "multer": "^2.0.2",
+    "openai": "^6.39.0",
+    "uuid": "^13.0.0",
+    "validator": "^13.15.23",
+    "xlsx": "^0.18.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
