@@ -31,6 +31,11 @@ const orderProductsSchema = new mongoose.Schema({
     required: [true, "Unit price is required"],
     min: [0, "Unit price cannot be negative"],
   },
+  buyingPrice: {
+    type: Number,
+    default: 0,
+    min: [0, "Buying price cannot be negative"],
+  },
 });
 
 const orderSchema = new mongoose.Schema(

@@ -329,6 +329,7 @@ export const createOrder = asyncErrorHandler(async (req, res, next) => {
               quantity: product.quantity,
               baseQuantity,
               unitPrice,
+              buyingPrice: product.buyingPrice ?? inventoryItem.buyingPrice ?? 0,
             });
           }
 
@@ -574,7 +575,7 @@ export const getAllOrders = asyncErrorHandler(async (req, res, next) => {
   };
 
   // Extract query parameters
-  const { saleType, paymentType, paymentMethod, page, limit, search, dueDays, creditPersonId } = req.query;
+  const { saleType, paymentType, paymentMethod, page, limit, search, dueDays, creditPersonId, buyingPrice, unitPrice } = req.query;
 
   // Add saleType filter if provided
   if (saleType !== undefined && saleType !== "") {
@@ -649,6 +650,22 @@ export const getAllOrders = asyncErrorHandler(async (req, res, next) => {
     } else {
       // No matching product found — return empty result
       filter._id = null;
+    }
+  }
+
+  // Add buyingPrice filter if provided
+  if (req.query.buyingPrice !== undefined && req.query.buyingPrice !== "") {
+    const bp = Number(req.query.buyingPrice);
+    if (!isNaN(bp)) {
+      filter["ordersProducts.buyingPrice"] = bp;
+    }
+  }
+
+  // Add unitPrice filter if provided
+  if (req.query.unitPrice !== undefined && req.query.unitPrice !== "") {
+    const up = Number(req.query.unitPrice);
+    if (!isNaN(up)) {
+      filter["ordersProducts.unitPrice"] = up;
     }
   }
 

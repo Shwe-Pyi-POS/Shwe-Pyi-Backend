@@ -803,16 +803,28 @@ export const getProductSalesReportByStorefrontId = asyncErrorHandler(
           },
         },
       },
-      // Group by inventoryId to aggregate statistics
+      // Group by inventoryId + buyingPrice + unitPrice to show separate entries for different prices
       {
         $group: {
-          _id: "$ordersProducts.inventoryId",
+          _id: {
+            inventoryId: "$ordersProducts.inventoryId",
+            buyingPrice: "$ordersProducts.buyingPrice",
+            unitPrice: "$ordersProducts.unitPrice",
+          },
           totalQuantity: { $sum: "$ordersProducts.effectiveBaseQty" },
           totalRevenue: {
             $sum: {
               $multiply: [
                 "$ordersProducts.quantity",
                 "$ordersProducts.unitPrice",
+              ],
+            },
+          },
+          totalBuyingCost: {
+            $sum: {
+              $multiply: [
+                "$ordersProducts.effectiveBaseQty",
+                "$ordersProducts.buyingPrice",
               ],
             },
           },
@@ -836,7 +848,7 @@ export const getProductSalesReportByStorefrontId = asyncErrorHandler(
       {
         $lookup: {
           from: "inventories",
-          localField: "_id",
+          localField: "_id.inventoryId",
           foreignField: "_id",
           as: "inventory",
         },
@@ -852,7 +864,7 @@ export const getProductSalesReportByStorefrontId = asyncErrorHandler(
       {
         $project: {
           _id: 0,
-          inventoryId: "$_id",
+          inventoryId: "$_id.inventoryId",
           productName: "$inventory.productName",
           productCode: "$inventory.productCode",
           SKU: "$inventory.SKU",
@@ -860,10 +872,12 @@ export const getProductSalesReportByStorefrontId = asyncErrorHandler(
           subCategory: "$inventory.subCategory",
           brand: "$inventory.brand",
           unitOfMeasure: "$inventory.unitOfMeasure",
+          buyingPrice: "$_id.buyingPrice",
           totalQuantity: 1,
           totalRevenue: 1,
+          totalBuyingCost: 1,
           orderCount: 1,
-          averageUnitPrice: { $round: ["$averageUnitPrice", 2] },
+          averageUnitPrice: { $round: ["$_id.unitPrice", 2] },
           minUnitPrice: 1,
           maxUnitPrice: 1,
         },
@@ -876,14 +890,17 @@ export const getProductSalesReportByStorefrontId = asyncErrorHandler(
         acc.totalQuantity += item.totalQuantity;
         acc.totalRevenue += item.totalRevenue;
         acc.totalUniqueProducts += 1;
+        acc.totalBuyingCost += item.totalBuyingCost || 0;
         return acc;
       },
       {
         totalQuantity: 0,
         totalRevenue: 0,
         totalUniqueProducts: 0,
+        totalBuyingCost: 0,
       }
     );
+    totals.totalProfit = totals.totalRevenue - totals.totalBuyingCost;
 
     // Get date range info
     const { startDate, endDate } = req.query;
@@ -908,6 +925,8 @@ export const getProductSalesReportByStorefrontId = asyncErrorHandler(
           totalQuantity: totals.totalQuantity,
           totalRevenue: totals.totalRevenue,
           totalUniqueProducts: totals.totalUniqueProducts,
+          totalBuyingCost: totals.totalBuyingCost,
+          totalProfit: totals.totalProfit,
         },
         products: productSalesReport,
       },
