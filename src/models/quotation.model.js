@@ -33,6 +33,11 @@ const quotationSchema = new mongoose.Schema({
     ref: "LocationProfile",
     default: null,
   },
+  creditPersonId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "CreditPerson",
+    default: null,
+  },
   customerName: { type: String, trim: true, default: null },
   customerPhone: { type: String, trim: true, default: null },
   note: { type: String, trim: true, default: null },

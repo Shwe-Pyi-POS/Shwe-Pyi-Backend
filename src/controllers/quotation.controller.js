@@ -13,6 +13,7 @@ export const createQuotation = asyncErrorHandler(async (req, res, next) => {
   const {
     saleType = "storefront",
     storefrontId,
+    creditPersonId,
     customerName,
     customerPhone,
     note,
@@ -125,6 +126,7 @@ export const createQuotation = asyncErrorHandler(async (req, res, next) => {
     quotationNumber,
     saleType,
     storefrontId: storefrontId ? new mongoose.Types.ObjectId(storefrontId) : null,
+    creditPersonId: creditPersonId ? new mongoose.Types.ObjectId(creditPersonId) : null,
     customerName: customerName || null,
     customerPhone: customerPhone || null,
     note: note || null,
@@ -205,6 +207,7 @@ export const getAllQuotations = asyncErrorHandler(async (req, res, next) => {
   const [quotations, totalCount] = await Promise.all([
     Quotation.find(filter)
       .populate("storefrontId", "locationName locationCode")
+      .populate("creditPersonId", "name phone address")
       .populate("createdBy", "name role")
       .sort({ [sortBy]: sortOrder === "asc" ? 1 : -1 })
       .skip((pageNum - 1) * limitNum)
@@ -263,6 +266,7 @@ export const getQuotationById = asyncErrorHandler(async (req, res, next) => {
 
   const quotation = await Quotation.findOne({ _id: id, isDeleted: false })
     .populate("storefrontId", "locationName locationCode")
+    .populate("creditPersonId", "name phone address")
     .populate("products.inventoryId", "productName productCode SKU sellingPrice unitOfMeasure")
     .populate("createdBy", "name role");
 
@@ -308,12 +312,17 @@ export const updateQuotation = asyncErrorHandler(async (req, res, next) => {
   const allowedFields = [
     "customerName", "customerPhone", "note",
     "products", "subTotal", "tax", "discount", "finalAmount",
-    "saleType", "storefrontId",
+    "saleType", "storefrontId", "creditPersonId", "status",
   ];
 
+  if (req.body.status && !["draft", "converted", "cancelled"].includes(req.body.status)) {
+    return next(new CustomError(400, "Invalid status. Allowed values: draft, converted, cancelled"));
+  }
+
   // If products are being updated, re-process UOM conversion
-  if (req.body.products) {
-    const ordersProducts = req.body.products;
+  const productsPayload = req.body.products || req.body.ordersProducts;
+  if (productsPayload) {
+    const ordersProducts = productsPayload;
     if (!Array.isArray(ordersProducts) || ordersProducts.length === 0) {
       return next(new CustomError(400, "Products must be a non-empty array"));
     }
@@ -381,6 +390,10 @@ export const updateQuotation = asyncErrorHandler(async (req, res, next) => {
         quotation.storefrontId = req.body.storefrontId
           ? new mongoose.Types.ObjectId(req.body.storefrontId)
           : null;
+      } else if (field === "creditPersonId") {
+        quotation.creditPersonId = req.body.creditPersonId
+          ? new mongoose.Types.ObjectId(req.body.creditPersonId)
+          : null;
       } else {
         quotation[field] = req.body[field];
       }
@@ -423,15 +436,19 @@ export const softDeleteQuotation = asyncErrorHandler(async (req, res, next) => {
     return next(new CustomError(400, "Invalid quotation ID format"));
   }
 
+  const quotationCheck = await Quotation.findOne({ _id: id, isDeleted: false });
+  if (!quotationCheck) {
+    return next(new CustomError(404, "Quotation not found"));
+  }
+  if (quotationCheck.status !== "cancelled") {
+    return next(new CustomError(400, "Only cancelled quotations can be deleted"));
+  }
+
   const quotation = await Quotation.findOneAndUpdate(
     { _id: id, isDeleted: false },
     { isDeleted: true, deletedAt: new Date() },
     { new: true },
   );
-
-  if (!quotation) {
-    return next(new CustomError(404, "Quotation not found"));
-  }
 
   logActivity({
     admin: req.user._id,
