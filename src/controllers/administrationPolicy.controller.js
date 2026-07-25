@@ -27,6 +27,7 @@ export const protect = asyncErrorHandler(async (req, res, next) => {
     role === "owner" ||
     role === "admin" ||
     role === "cashier" ||
+    role === "inventory-manager" ||
     role === "kitchen" ||
     role === "bar-counter" ||
     role === "ktv-waiter" ||

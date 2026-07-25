@@ -13,25 +13,25 @@ const router = express.Router();
 router.post(
   "/transfer",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   createTransfer
 );
 router.get(
   "/transfer",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   getTransfers
 );
 router.get(
   "/transfer/:id",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   getTransferById
 );
 router.patch(
   "/transfer/:id",
   protect,
-  permissionGranted("owner"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   updateTransferStatus
 );
 export default router;

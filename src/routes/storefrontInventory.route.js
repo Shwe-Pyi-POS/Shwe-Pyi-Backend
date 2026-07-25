@@ -38,7 +38,7 @@ const upload = multer({
 router.post(
   "/storefront-inventory/import-excel",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   upload.single("file"),
   importStorefrontInventoryFromExcel,
 );
@@ -47,7 +47,7 @@ router.post(
 router.post(
   "/storefront-inventory",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   createStorefrontInventory
 );
 
@@ -55,7 +55,7 @@ router.post(
 router.get(
   "/storefront-inventory",
   protect,
-  permissionGranted("owner", "admin", "cashier"),
+  permissionGranted("owner", "admin", "cashier", "inventory-manager"),
   getAllStorefrontInventory
 );
 
@@ -63,7 +63,7 @@ router.get(
 router.get(
   "/storefront-inventory/:id",
   protect,
-  permissionGranted("owner", "admin", "cashier"),
+  permissionGranted("owner", "admin", "cashier", "inventory-manager"),
   getStorefrontInventoryById
 );
 
@@ -71,7 +71,7 @@ router.get(
 router.patch(
   "/storefront-inventory/:id/quantity",
   protect,
-  permissionGranted("owner"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   updateStorefrontInventoryQuantity
 );
 

@@ -43,7 +43,7 @@ const upload = multer({
 router.post(
   "/inventory/import-excel",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   upload.single("file"),
   importInventoryFromExcel,
 );
@@ -52,7 +52,7 @@ router.post(
 router.get(
   "/inventory/categories",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "cashier", "inventory-manager"),
   getAllCategories,
 );
 
@@ -60,7 +60,7 @@ router.get(
 router.post(
   "/inventory",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   inventoryMulter.array("images", 5),
   createInventory,
 );
@@ -69,7 +69,7 @@ router.post(
 router.get(
   "/inventory",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   getAllInventory,
 );
 
@@ -77,7 +77,7 @@ router.get(
 router.get(
   "/inventory/:id",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   getInventoryById,
 );
 
@@ -85,7 +85,7 @@ router.get(
 router.patch(
   "/inventory/:id",
   protect,
-  permissionGranted("owner"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   updateInventory,
 );
 
@@ -93,7 +93,7 @@ router.patch(
 router.post(
   "/inventory/:id/images",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   uploadInventoryImages,
 );
 
@@ -101,7 +101,7 @@ router.post(
 router.delete(
   "/inventory/:id/images/:imageId",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   deleteInventoryImage,
 );
 
@@ -109,7 +109,7 @@ router.delete(
 router.patch(
   "/inventory/:id/images/:imageId/primary",
   protect,
-  permissionGranted("owner", "admin"),
+  permissionGranted("owner", "admin", "inventory-manager"),
   setPrimaryInventoryImage,
 );
 
