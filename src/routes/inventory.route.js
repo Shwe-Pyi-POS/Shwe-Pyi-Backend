@@ -11,11 +11,20 @@ import {
   uploadInventoryImages,
   deleteInventoryImage,
   setPrimaryInventoryImage,
+  bulkUpdateHollowPrices,
 } from "../controllers/inventory.controller.js";
 import { protect } from "../controllers/administrationPolicy.controller.js";
 import { permissionGranted } from "../controllers/administrationPolicy.controller.js";
 
 const router = express.Router();
+
+// Bulk update hollow products per-kg price
+router.patch(
+  "/inventory/bulk-update-hollow-prices",
+  protect,
+  permissionGranted("owner", "admin", "inventory-manager"),
+  bulkUpdateHollowPrices,
+);
 
 const upload = multer({
   storage: multer.memoryStorage(),

@@ -790,3 +790,46 @@ export const setPrimaryInventoryImage = asyncErrorHandler(
     });
   }
 );
+
+// Bulk update hollow products per-kg price and recalculate totals
+export const bulkUpdateHollowPrices = asyncErrorHandler(
+  async (req, res, next) => {
+    const { buyingPricePerKg, sellingPricePerKg } = req.body;
+
+    if (buyingPricePerKg === undefined && sellingPricePerKg === undefined) {
+      return next(new CustomError(400, "Please provide buyingPricePerKg or sellingPricePerKg"));
+    }
+
+    const parsedBuyingPrice = buyingPricePerKg !== undefined ? Number(buyingPricePerKg) : undefined;
+    const parsedSellingPrice = sellingPricePerKg !== undefined ? Number(sellingPricePerKg) : undefined;
+
+    if (parsedBuyingPrice !== undefined && (isNaN(parsedBuyingPrice) || parsedBuyingPrice < 0)) {
+      return next(new CustomError(400, "Invalid buyingPricePerKg value"));
+    }
+    if (parsedSellingPrice !== undefined && (isNaN(parsedSellingPrice) || parsedSellingPrice < 0)) {
+      return next(new CustomError(400, "Invalid sellingPricePerKg value"));
+    }
+
+    // Find all products in category 'hollow' (case insensitive match)
+    const hollowProducts = await Inventory.find({ category: /hollow/i });
+
+    for (const product of hollowProducts) {
+      if (parsedBuyingPrice !== undefined) {
+        product.buyingPricePerKg = parsedBuyingPrice;
+      }
+      if (parsedSellingPrice !== undefined) {
+        product.sellingPricePerKg = parsedSellingPrice;
+      }
+      // Saving triggers pre("validate") hook which recalculates buyingPrice and sellingPrice
+      await product.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully updated ${hollowProducts.length} hollow products`,
+      data: {
+        updatedCount: hollowProducts.length
+      }
+    });
+  }
+);
