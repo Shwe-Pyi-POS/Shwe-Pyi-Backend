@@ -76,6 +76,21 @@ const inventorySchema = new mongoose.Schema(
           "Selling price should be greater than or equal to buying price",
       },
     },
+    weightPerPiece: {
+      type: Number,
+      default: 0,
+      min: [0, "Weight per piece cannot be negative"],
+    },
+    buyingPricePerKg: {
+      type: Number,
+      default: 0,
+      min: [0, "Buying price per Kg cannot be negative"],
+    },
+    sellingPricePerKg: {
+      type: Number,
+      default: 0,
+      min: [0, "Selling price per Kg cannot be negative"],
+    },
     unitOfMeasure: {
       type: String,
       required: [true, "Unit of measure is required"],
@@ -197,6 +212,13 @@ inventorySchema.virtual("profitMargin").get(function () {
 // Virtual for profit amount
 inventorySchema.virtual("profitAmount").get(function () {
   return this.sellingPrice - this.buyingPrice;
+});
+
+inventorySchema.pre("validate", function () {
+  if (this.category && typeof this.category === "string" && this.category.toLowerCase() === "hollow") {
+    this.buyingPrice = (this.weightPerPiece || 0) * (this.buyingPricePerKg || 0);
+    this.sellingPrice = (this.weightPerPiece || 0) * (this.sellingPricePerKg || 0);
+  }
 });
 
 // Pre-save middleware to validate wholesale prices and UOM conversions
