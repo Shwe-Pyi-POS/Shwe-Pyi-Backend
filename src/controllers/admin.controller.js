@@ -24,6 +24,16 @@ export const signup = asyncErrorHandler(async (req, res, next) => {
     locationId,
   });
 
+  logActivity({
+    admin: req.user._id,
+    action: "create",
+    feature: "admin",
+    description: `Admin ${req.user.name} created account for ${admin.name}`,
+    targetId: admin._id,
+    targetModel: "Admin",
+    ip: req.ip,
+  });
+
   res.status(200).json({
     success: true,
     message: "Admin created successfully.",
@@ -138,6 +148,16 @@ export const updatePassword = asyncErrorHandler(async (req, res, next) => {
 
   await admin.save({ validateBeforeSave: true });
 
+  logActivity({
+    admin: req.user._id,
+    action: "update",
+    feature: "admin",
+    description: `Admin ${req.user.name} changed password for ${admin.name}`,
+    targetId: admin._id,
+    targetModel: "Admin",
+    ip: req.ip,
+  });
+
   res.status(200).json({
     success: true,
     message: "Password updated successfully.",
@@ -166,6 +186,16 @@ export const userSoftDelete = asyncErrorHandler(async (req, res, next) => {
 
   await admin.save({ validateBeforeSave: true });
 
+  logActivity({
+    admin: req.user._id,
+    action: "delete",
+    feature: "admin",
+    description: `Admin ${req.user.name} soft-deleted account ${admin.name}`,
+    targetId: admin._id,
+    targetModel: "Admin",
+    ip: req.ip,
+  });
+
   res.status(200).json({
     success: true,
     message: "User soft deleted successfully.",
@@ -186,6 +216,17 @@ export const userRestore = asyncErrorHandler(async (req, res, next) => {
   if (!admin) {
     return next(new CustomError(404, "User not found."));
   }
+
+  logActivity({
+    admin: req.user._id,
+    action: "update",
+    feature: "admin",
+    description: `Admin ${req.user.name} restored account ${admin.name}`,
+    targetId: admin._id,
+    targetModel: "Admin",
+    ip: req.ip,
+  });
+
   res.status(200).json({
     success: true,
     message: "User restored successfully.",
@@ -202,6 +243,17 @@ export const userDelete = asyncErrorHandler(async (req, res, next) => {
   if (!admin) {
     return next(new CustomError(404, "User not found."));
   }
+
+  logActivity({
+    admin: req.user._id,
+    action: "delete",
+    feature: "admin",
+    description: `Admin ${req.user.name} permanently deleted account ${admin.name}`,
+    targetId: admin._id,
+    targetModel: "Admin",
+    ip: req.ip,
+  });
+
   res.status(200).json({
     success: true,
     message: "User deleted successfully.",
@@ -286,6 +338,17 @@ export const updateUser = asyncErrorHandler(async (req, res, next) => {
   if (!updatedUser) {
     return next(new CustomError(404, "User not found."));
   }
+
+  logActivity({
+    admin: req.user._id,
+    action: "update",
+    feature: "admin",
+    description: `Admin ${req.user.name} updated account ${updatedUser.name}`,
+    targetId: updatedUser._id,
+    targetModel: "Admin",
+    metadata: { name, role, locationId },
+    ip: req.ip,
+  });
 
   res.status(200).json({
     success: true,
