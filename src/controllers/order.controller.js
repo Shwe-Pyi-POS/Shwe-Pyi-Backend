@@ -1735,50 +1735,87 @@ export const hardDeleteOrder = asyncErrorHandler(async (req, res, next) => {
     return next(new CustomError(400, "Invalid order ID format"));
   }
 
-  // 1. Find the order first to validate it exists and check conditions
-  const order = await Order.findById(orderId);
-  if (!order) {
-    return next(new CustomError(404, "Order not found"));
+  // Start MongoDB session for transaction
+  const session = await mongoose.startSession();
+  try {
+    let deletedOrder;
+    await session.withTransaction(async () => {
+      // 1. Find the order first to validate it exists and check conditions
+      const order = await Order.findById(orderId).session(session);
+      if (!order) {
+        throw new CustomError(404, "Order not found");
+      }
+
+      // 2. Check if order has credit records - order cannot be hard deleted if it has credit records
+      const creditRecordsCount = await CreditRecord.countDocuments({
+        orderId: orderId,
+        isDeleted: false,
+      }).session(session);
+
+      if (creditRecordsCount > 0) {
+        throw new CustomError(
+          400,
+          `Cannot hard delete order with credit records. This order has ${creditRecordsCount} credit record(s) associated with it. Please delete those records first.`,
+        );
+      }
+
+      // 3. Automatically restore stock to storefront inventory for all order items
+      if (
+        order.ordersProducts &&
+        Array.isArray(order.ordersProducts) &&
+        order.ordersProducts.length > 0
+      ) {
+        for (const item of order.ordersProducts) {
+          const factor = item.factor || 1;
+          const restoreBaseQty = item.quantity / factor;
+
+          // Restore stock (in base units)
+          const stockRecord = await StorefrontInventory.findOne(
+            {
+              inventoryId: item.inventoryId,
+              storefrontId: order.storefrontId,
+            },
+            null,
+            { session }
+          );
+
+          if (!stockRecord) {
+            // If stock record doesn't exist, create it
+            await StorefrontInventory.create(
+              [
+                {
+                  inventoryId: item.inventoryId,
+                  storefrontId: order.storefrontId,
+                  quantity: restoreBaseQty,
+                  lastUpdated: new Date(),
+                },
+              ],
+              { session }
+            );
+          } else {
+            // Restore stock to existing record
+            stockRecord.quantity += restoreBaseQty;
+            stockRecord.lastUpdated = new Date();
+            await stockRecord.save({ session });
+          }
+        }
+      }
+
+      // 4. All validations passed, proceed with hard delete
+      deletedOrder = await Order.findByIdAndDelete(orderId).session(session);
+      if (!deletedOrder) {
+        throw new CustomError(404, "Order not found");
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Order hard deleted and storefront inventory stock restored successfully",
+      data: deletedOrder,
+    });
+  } catch (error) {
+    next(error);
+  } finally {
+    session.endSession();
   }
-
-  // 2. Validate order items - order cannot be hard deleted if it has order items
-  if (
-    order.ordersProducts &&
-    Array.isArray(order.ordersProducts) &&
-    order.ordersProducts.length > 0
-  ) {
-    return next(
-      new CustomError(
-        400,
-        "Cannot hard delete order with order items. Order must have empty order items or empty array to be deleted.",
-      ),
-    );
-  }
-
-  // 3. Check if order has credit records - order cannot be hard deleted if it has credit records
-  const creditRecordsCount = await CreditRecord.countDocuments({
-    orderId: orderId,
-    isDeleted: false,
-  });
-
-  if (creditRecordsCount > 0) {
-    return next(
-      new CustomError(
-        400,
-        `Cannot hard delete order with credit records. This order has ${creditRecordsCount} credit record(s) associated with it.`,
-      ),
-    );
-  }
-
-  // 4. All validations passed, proceed with hard delete
-  const deletedOrder = await Order.findByIdAndDelete(orderId);
-  if (!deletedOrder) {
-    return next(new CustomError(404, "Order not found"));
-  }
-
-  res.status(200).json({
-    success: true,
-    message: "Order hard deleted successfully",
-    data: deletedOrder,
-  });
 });
