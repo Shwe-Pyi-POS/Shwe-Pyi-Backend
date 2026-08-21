@@ -92,6 +92,11 @@ router.patch(
 );
 
 // Hard delete order
-router.delete("/order/:orderId", hardDeleteOrder);
+router.delete(
+  "/order/:orderId",
+  protect,
+  permissionGranted("owner", "admin", "cashier"),
+  hardDeleteOrder
+);
 
 export default router;

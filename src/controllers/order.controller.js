@@ -1808,6 +1808,17 @@ export const hardDeleteOrder = asyncErrorHandler(async (req, res, next) => {
       }
     });
 
+    logActivity({
+      admin: req.user._id,
+      action: "delete",
+      feature: "order",
+      description: `Hard deleted order ${deletedOrder.orderNumber} for ${deletedOrder.customerName || "walk-in"} - restored stock to storefront inventory`,
+      targetId: deletedOrder._id,
+      targetModel: "Order",
+      metadata: { orderNumber: deletedOrder.orderNumber, finalAmount: deletedOrder.finalAmount },
+      ip: req.ip,
+    });
+
     res.status(200).json({
       success: true,
       message: "Order hard deleted and storefront inventory stock restored successfully",
