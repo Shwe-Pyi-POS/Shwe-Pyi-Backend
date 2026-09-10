@@ -210,7 +210,8 @@ export const getCreditRecordsByOrderId = asyncErrorHandler(
       isDeleted: false,
     })
       .sort({ paymentDate: -1 }) // Sort by newest payment first
-      .populate("orderId", "orderNumber finalAmount paymentType lastPaymentDate dueDate");
+      .populate("orderId", "orderNumber finalAmount paymentType lastPaymentDate dueDate")
+      .populate("addedBy", "name role");
 
     // Calculate total paid from credit records
     const totalCreditPayments = creditRecords.reduce(
@@ -322,7 +323,7 @@ export const getAllCreditRecords = asyncErrorHandler(async (req, res, next) => {
   let creditRecordsQuery = CreditRecord.find(query)
     .populate("orderId", "orderNumber finalAmount paymentType lastPaymentDate dueDate")
     .populate("creditPersonId", "name phone")
-    .populate("addedBy", "name email")
+    .populate("addedBy", "name role")
     .sort({ paymentDate: -1 });
 
   let pagination = null;
