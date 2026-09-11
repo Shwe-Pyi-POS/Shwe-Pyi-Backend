@@ -578,7 +578,19 @@ export const getAllOrders = asyncErrorHandler(async (req, res, next) => {
   };
 
   // Extract query parameters
-  const { saleType, paymentType, paymentMethod, page, limit, search, dueDays, creditPersonId, buyingPrice, unitPrice } = req.query;
+  const {
+    saleType,
+    paymentType,
+    paymentMethod,
+    page,
+    limit,
+    search,
+    dueDays,
+    creditPersonId,
+    buyingPrice,
+    unitPrice,
+    paymentStatus,
+  } = req.query;
 
   // Add saleType filter if provided
   if (saleType !== undefined && saleType !== "") {
@@ -616,6 +628,58 @@ export const getAllOrders = asyncErrorHandler(async (req, res, next) => {
       );
     }
     filter.paymentType = paymentType;
+  }
+
+  // Add paymentStatus filter if provided (e.g. paid, fully_paid, pending, unpaid, partial, partially_paid)
+  if (paymentStatus !== undefined && paymentStatus !== "" && paymentStatus !== "all") {
+    const validStatuses = [
+      "paid",
+      "fully_paid",
+      "pending",
+      "unpaid",
+      "partial",
+      "partially_paid",
+    ];
+    if (!validStatuses.includes(paymentStatus.toLowerCase())) {
+      return next(
+        new CustomError(
+          400,
+          `Invalid payment status. Allowed values: ${validStatuses.join(", ")}`,
+        ),
+      );
+    }
+
+    const normStatus = paymentStatus.toLowerCase();
+    if (normStatus === "paid" || normStatus === "fully_paid") {
+      if (filter.paymentType === "credit") {
+        filter.$expr = { $gte: ["$paidAmount", "$finalAmount"] };
+      } else {
+        filter.$or = [
+          { paymentType: "paid" },
+          { $expr: { $gte: ["$paidAmount", "$finalAmount"] } },
+        ];
+      }
+    } else if (normStatus === "pending") {
+      filter.paymentType = "credit";
+      filter.$expr = { $lt: ["$paidAmount", "$finalAmount"] };
+    } else if (normStatus === "unpaid") {
+      filter.paymentType = "credit";
+      filter.$and = [
+        ...(filter.$and || []),
+        {
+          $or: [
+            { paidAmount: 0 },
+            { paidAmount: { $exists: false } },
+            { paidAmount: null },
+          ],
+        },
+        { $expr: { $lt: ["$paidAmount", "$finalAmount"] } },
+      ];
+    } else if (normStatus === "partial" || normStatus === "partially_paid") {
+      filter.paymentType = "credit";
+      filter.paidAmount = { $gt: 0 };
+      filter.$expr = { $lt: ["$paidAmount", "$finalAmount"] };
+    }
   }
 
   // Add paymentMethod filter if provided
