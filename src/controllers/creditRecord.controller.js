@@ -601,12 +601,19 @@ export const getCreditRecordsByCreditPersonId = asyncErrorHandler(
           name: creditPerson.name,
           phone: creditPerson.phone,
         },
-        orders: orders.map((order) => ({
-          _id: order._id,
-          orderNumber: order.orderNumber,
-          lastPaymentDate: order.lastPaymentDate || null,
-          dueDate: order.dueDate || null,
-        })),
+        orders: orders.map((order) => {
+          const finalAmt = order.finalAmount || 0;
+          const paid = order.paidAmount || 0;
+          return {
+            _id: order._id,
+            orderNumber: order.orderNumber,
+            finalAmount: finalAmt,
+            paidAmount: paid,
+            remainingBalance: Math.max(0, finalAmt - paid),
+            lastPaymentDate: order.lastPaymentDate || null,
+            dueDate: order.dueDate || null,
+          };
+        }),
         creditRecords: {
           count: creditRecordsWithBalance.length,
           records: creditRecordsWithBalance,
